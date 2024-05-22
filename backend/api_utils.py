@@ -1,5 +1,3 @@
-#TODO: substitute with OpenAI with Llama3
-
 import os
 from dotenv import load_dotenv
 from together import Together
