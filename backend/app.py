@@ -5,6 +5,7 @@ app = Flask(__name__)
 
 @app.get('/summary/<video_id>')
 def get_summary(video_id: str):
+    #TODO: respond with a JSON instead, indicating result status
     try:
         srt = get_yt_captions(video_id)
     except:
