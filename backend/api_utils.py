@@ -57,13 +57,13 @@ def get_cornell_summary(text: str) -> str:
         response_parts += "\n\n" + chunk_response
         pause_index = next_pause_index
 
-    summary_prompt_start = "These bullet points were created following the Cornell " + \
+    summary_prompt = "These bullet points were created following the Cornell " + \
         "Note-Taking System. Please provide a short summary for them:\n\n" + response_parts
 
     #TODO: estimate the size of text/video that will cause this edge case to occur
     # presumably, this will never happen for real videos
-    if len(summary_prompt_start) > llama_max_context:
+    if len(summary_prompt) > llama_max_context:
         return response_parts
 
-    summary_response = get_together_response(summary_prompt_start)
+    summary_response = get_together_response(summary_prompt)
     return response_parts + "\n\n" + summary_response
