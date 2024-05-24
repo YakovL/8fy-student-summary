@@ -23,7 +23,17 @@ def get_together_response(prompt: str) -> str:
     )
     return response.choices[0].message.content
 
-def get_cornell_summary(text: str) -> str:
+def get_together_response_stream(prompt: str):
+    """ requests Together API to reply with a stream, yields content further """
+    stream = together_client.chat.completions.create(
+        model="meta-llama/Llama-3-8b-chat-hf",
+        messages=[{"role": "user", "content": prompt}],
+        stream=True,
+    )
+    for chunk in stream:
+        yield str(chunk.choices[0].delta.content) or ""
+
+def get_cornell_summary(text: str):
     """ requests Together API to summarize """
     llama_max_context = 8000
     promt_start = "Summarize the following text using Cornell Note-Taking System. " + \
@@ -31,7 +41,9 @@ def get_cornell_summary(text: str) -> str:
     prompt = promt_start + text
 
     if len(prompt) < llama_max_context:
-        return get_together_response(prompt)
+        for stream_chunk in get_together_response_stream(prompt):
+            yield stream_chunk
+        return
 
     # have to split into chunks
     chunk_prompt_start = "Summarize the following text using Cornell Note-Taking System. " + \
@@ -53,8 +65,12 @@ def get_cornell_summary(text: str) -> str:
             return "Error: The word is too long to summarize"
 
         chunk = text[pause_index:next_pause_index]
-        chunk_response = get_together_response(chunk_prompt_start + chunk)
-        response_parts += "\n\n" + chunk_response
+        chunk_response_stream = get_together_response_stream(chunk_prompt_start + chunk)
+        for stream_chunk_text in chunk_response_stream:
+            response_parts += stream_chunk_text
+            yield stream_chunk_text
+        yield "\n\n"
+        response_parts += "\n\n"
         pause_index = next_pause_index
 
     summary_prompt = "These bullet points were created following the Cornell " + \
@@ -65,5 +81,6 @@ def get_cornell_summary(text: str) -> str:
     if len(summary_prompt) > llama_max_context:
         return response_parts
 
-    summary_response = get_together_response(summary_prompt)
-    return response_parts + "\n\n" + summary_response
+    for stream_chunk in get_together_response_stream(summary_prompt):
+        yield stream_chunk
+    return
